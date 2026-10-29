@@ -1,5 +1,6 @@
 package com.javi.curso.springcloud.kafka.api.controllers;
 
+import com.javi.curso.springcloud.kafka.api.models.Reply;
 import com.javi.curso.springcloud.kafka.api.models.dto.ProductDto;
 import com.javi.curso.springcloud.kafka.api.services.ProductCommandService;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Duration;
 import java.util.Map;
 
 @RestController
@@ -22,7 +24,10 @@ public class ProductController {
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody ProductDto dto) {
-        commandService.sendCreate(dto);
-        return ResponseEntity.ok().body(Map.of("message", "Success Sent"));
+        Reply<?> reply = commandService.sendCreateAndAwait(dto, Duration.ofSeconds(5));
+        if ("SUCCESS".equalsIgnoreCase(reply.status())) {
+            return ResponseEntity.ok(reply.body());
+        }
+        return ResponseEntity.badRequest().body(Map.of("error", reply.message()));
     }
 }
